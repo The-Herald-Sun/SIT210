@@ -5,7 +5,6 @@ import tkinter as tk
 from tkinter import messagebox
 
 import paho.mqtt.client as mqtt
-import threading
 
 # container that holds the entire ui
 class UI:
