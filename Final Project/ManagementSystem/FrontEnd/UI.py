@@ -142,8 +142,9 @@ class UpdateCowDialog(tk.Toplevel):
 
         self.tag_id_label = tk.Label(self, text="Tag ID:")
         self.tag_id_label.grid(row=0, column=0)
-        self.tag_id_entry = tk.Entry(self, width=50, state="disabled")
+        self.tag_id_entry = tk.Entry(self, width=50)
         self.tag_id_entry.insert(0, str(cow.tag_id))
+        self.tag_id_entry.config(state="disabled")
         self.tag_id_entry.grid(row=0, column=1)
 
         self.name_label = tk.Label(self, text="Name:")
