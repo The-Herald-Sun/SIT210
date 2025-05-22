@@ -1,0 +1,5 @@
+colour==0.1.5
+paho-mqtt==2.1.0
+peewee==3.18.1
+setuptools==78.1.1
+wheel==0.45.1
