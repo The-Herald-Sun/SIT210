@@ -83,6 +83,7 @@ void setup_wifi() {
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     Serial.print(".");
   }
 
@@ -139,6 +140,7 @@ void loop() {
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     while (WiFi.status() != WL_CONNECTED) {
       delay(500);
+      WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
       Serial.print(".");
     }
     Serial.println("\nWiFi reconnected!");
