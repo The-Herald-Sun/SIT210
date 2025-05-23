@@ -6,13 +6,17 @@ from tkinter import messagebox
 
 import paho.mqtt.client as mqtt
 
+from colour import Color
+
 # container that holds the entire ui
 class UI:
     def __init__(self, master, cow_data_access):
-        self.root = master
+        self.master = master
         self.cow_data_access = cow_data_access
         master.title("Cattle Feed Management System")
         master.geometry("800x600")
+        self.column_width = 30
+        self.base_color = Color(hue=0.6, saturation=0.5, luminance=0.55)
 
         self.mqtt_client = mqtt.Client()
         self.mqtt_client.on_connect = self.on_connect
@@ -36,7 +40,20 @@ class UI:
             # do love how easy it is to throw an error message
             messagebox.showerror("MQTT Connection Error", f"MQTT connection failed: {e}")
         
-        self.cow_list = CowList(master, cow_data_access=self.cow_data_access)
+        self.column_label_frame = tk.Frame(master)
+        self.column_label_frame.pack(side=tk.TOP, fill=tk.X) 
+
+        self.tag_id_label = tk.Label(self.column_label_frame, text="Tag ID", anchor="w", width=self.column_width, borderwidth=2, relief=tk.GROOVE)
+        self.tag_id_label.grid(row=0, column=0, sticky="ew")
+        self.name_label = tk.Label(self.column_label_frame, text="Name", anchor="w", width=self.column_width, borderwidth=2, relief=tk.GROOVE)
+        self.name_label.grid(row=0, column=1, sticky="ew")
+        self.feed_time_label = tk.Label(self.column_label_frame, text="Feed Time", anchor="w", width=self.column_width, borderwidth=2, relief=tk.GROOVE)
+        self.feed_time_label.grid(row=0, column=2, sticky="ew")
+        self.actions_label = tk.Label(self.column_label_frame, text="Actions", anchor="w", width=self.column_width, borderwidth=2, relief=tk.GROOVE)
+        self.actions_label.grid(row=0, column=3, columnspan=2, sticky="ew")
+
+        
+        self.cow_list = CowList(master, cow_data_access=self.cow_data_access, column_width=self.column_width, base_color= self.base_color)
         self.cow_list.set_cows(self.cow_data_access.get_all_cows())
         self.cow_list.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
@@ -50,7 +67,7 @@ class UI:
         print(f"Card ID: {card_id}")
         cow = self.cow_data_access.get_cow_by_tag_id(card_id)
         if cow is None:
-            AddCowDialog(self.root, self.cow_list, card_id, self.cow_data_access)
+            AddCowDialog(self.master, self.cow_list, card_id, self.cow_data_access)
         else:
             self.mqtt_client.publish("feed/time", cow.feed_time)
             pass
@@ -59,12 +76,13 @@ class UI:
         pass
 
 
-
 # big ol scrollable list of cow details
 class CowList(tk.Frame):
-    def __init__(self, master,cow_data_access, **kwargs):
+    def __init__(self, master, cow_data_access, column_width, base_color, **kwargs):
         super().__init__(master, **kwargs)
         self.cows = []
+        self.column_width = column_width
+        self.base_color = base_color
 
         self.cow_data_access = cow_data_access
 
@@ -91,34 +109,43 @@ class CowList(tk.Frame):
         for widget in self.scrollable_frame.winfo_children():
             widget.destroy()
 
-        for cow in self.cows:
-            cow_details = CowDetails(cow=cow, master=self.scrollable_frame, cow_list=self, cow_data_access=self.cow_data_access)
+        for i, cow in enumerate(self.cows):
+            temp_color = self.base_color
+            if i % 2 :
+                temp_color = Color(hue=self.base_color.hue, saturation=max(0, self.base_color.saturation - 0.1), luminance=self.base_color.luminance)
+            cow_details = CowDetails(cow=cow, master=self.scrollable_frame, cow_list=self, cow_data_access=self.cow_data_access, column_width=self.column_width, base_color=temp_color)
             cow_details.pack(fill="x", anchor="w")
 
     def set_cows(self, cows):
         self.cows = cows
         self.update_list()
 
+
 class CowDetails(tk.Frame):
-    def __init__(self, cow: Cow, cow_list, cow_data_access, master=None):
-        super().__init__(master)
+    def __init__(self, cow: Cow, cow_list, cow_data_access, column_width, master, base_color,**kwargs):
+        super().__init__(master, **kwargs)
         self.cow = cow
         self.cow_list = cow_list
         self.cow_data_access = cow_data_access
+        self.column_width = column_width
+        self.base_color = base_color
+        self.alt_color = Color(hue=(self.base_color.hue - 0.05), saturation=self.base_color.saturation, luminance=self.base_color.luminance)
 
-        self.tag_id_label = tk.Label(self, text=f"Tag ID: {cow.tag_id}", anchor="w", borderwidth=2, relief="solid")
+        self.tag_id_label = tk.Label(self, text=f"Tag ID: {cow.tag_id}", anchor="w", borderwidth=2, width=self.column_width, bg=self.base_color.hex_l)
         self.tag_id_label.grid(row=0, column=0, sticky="ew")
 
-        self.name_label = tk.Label(self, text=f"Name: {cow.name}", anchor="w", borderwidth=2, relief="solid")
+        self.name_label = tk.Label(self, text=f"Name: {cow.name}", anchor="w", borderwidth=2, width=self.column_width, bg=self.alt_color.hex_l)
         self.name_label.grid(row=0, column=1, sticky="ew")
 
-        self.feed_time_label = tk.Label(self, text=f"Feed Time: {cow.feed_time:.3g}s", anchor="w", borderwidth=2, relief="solid")
+        self.feed_time_label = tk.Label(self, text=f"Feed Time: {cow.feed_time:.3g}s", anchor="w", borderwidth=2, width=self.column_width, bg=self.base_color.hex_l)
         self.feed_time_label.grid(row=0, column=2, sticky="ew")
 
-        self.update_button = tk.Button(self, text="Update", command=self.update_cow)
+        button_height = self.tag_id_label.winfo_reqheight()
+
+        self.update_button = tk.Button(self, text="Update", command=self.update_cow, height=1, width=8, padx=0, pady=0)
         self.update_button.grid(row=0, column=3, sticky="ew")
 
-        self.delete_button = tk.Button(self, text="Delete", command=self.delete_cow)
+        self.delete_button = tk.Button(self, text="Delete", command=self.delete_cow, height=1, width=8, padx=0, pady=0)
         self.delete_button.grid(row=0, column=4, sticky="ew")
 
         self.columnconfigure(0, weight=1)
