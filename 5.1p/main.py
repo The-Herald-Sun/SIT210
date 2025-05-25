@@ -41,4 +41,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         for led in leds: # little bita cleanup
             led.off()
-        print("\And Away We Go!")
+        print("\nAnd Away We Go!")
